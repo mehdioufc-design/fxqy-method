@@ -1,0 +1,43 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package
+    Name="FXQY Method"
+    Manufacturer="FXQY Method"
+    Version="1.9.0"
+    UpgradeCode="B8F13F4E-73C0-4A45-A74A-F4B99A70BC9C"
+    Scope="perMachine">
+
+    <SummaryInformation Description="FXQY Method local video optimizer" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of FXQY Method is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch FXQY Method" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#LauncherExe]" />
+    <CustomAction Id="LaunchApplication" BinaryRef="Wix4UtilCA_X64" DllEntry="WixShellExec" Impersonate="yes" />
+    <UI>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="FXQY Method" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="MainFeature" Title="FXQY Method" Level="1">
+      <ComponentRef Id="LauncherComponent" />
+      <Files Include="$(AppSource)\**" Directory="INSTALLFOLDER">
+        <Exclude Files="$(AppSource)\FXQY Method.exe" />
+        <Exclude Files="$(AppSource)\Uninstall FXQY Method.exe" />
+      </Files>
+    </Feature>
+
+    <Component Id="LauncherComponent" Directory="INSTALLFOLDER">
+      <File Id="LauncherExe" Source="$(AppSource)\FXQY Method.exe" KeyPath="yes">
+        <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="FXQY Method" WorkingDirectory="INSTALLFOLDER" />
+        <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="FXQY Method" WorkingDirectory="INSTALLFOLDER" />
+      </File>
+    </Component>
+  </Package>
+</Wix>

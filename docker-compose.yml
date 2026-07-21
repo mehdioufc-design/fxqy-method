@@ -1,0 +1,24 @@
+services:
+  optimizer:
+    build: .
+    init: true
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 3000
+      ALLOW_NETWORK_BIND: "true"
+      DATA_ROOT: /data
+      FFMPEG_PATH: /usr/bin/ffmpeg
+      FFPROBE_PATH: /usr/bin/ffprobe
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - optimizer-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  optimizer-data:
