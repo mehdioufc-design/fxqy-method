@@ -3,7 +3,7 @@
 import { ArrowRight, Check, Film, HardDrive, ShieldCheck, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "@/lib/client-api";
-import { chooseSmartOptimize } from "@/lib/smart-optimize";
+import { chooseSmartOptimize, recommendedSafeFps } from "@/lib/smart-optimize";
 import { AnalysisPanel } from "./analysis-panel";
 import { ComparisonPreview } from "./comparison-preview";
 import { PresetSelector } from "./preset-selector";
@@ -14,7 +14,7 @@ import { Uploader } from "./uploader";
 const defaultSettings: ExportSettings = {
   preset: "tiktok-safe",
   performance: "fast-hardware",
-  safeFps: 60,
+  safeFps: 30,
   outputResolution: "1080p",
   codec: "h264",
   fitMode: "crop",
@@ -86,11 +86,12 @@ export function DashboardClient({
     const measuredFps = nextAsset.analysis.video.fps.measured;
     const sourceAtLeast120 = measuredFps !== undefined && measuredFps >= 119.98;
     const smart = chooseSmartOptimize(nextAsset.analysis);
+    const safeFps = recommendedSafeFps(nextAsset.analysis);
     setSettings({
       ...ownerDefaults,
       preset: smart.preset,
-      performance: "fast-hardware",
-      safeFps: 60,
+      performance: ownerDefaults.performance,
+      safeFps,
       outputResolution: "1080p",
       codec: isHdr ? "hevc" : "h264",
       fitMode: "crop",
@@ -226,7 +227,7 @@ export function DashboardClient({
       ) : (
         <section className="waiting-grid animate-in" aria-label="Workflow overview">
           <div className="panel-flat workflow-card workflow-card-analysis"><span><Film size={19} /></span><small>01 / Understand</small><strong>Know what is really in the file</strong><p>Resolution, cadence, codecs, colour, audio, rotation, timestamps and MP4 layout.</p><em><Check size={13} /> Real FFprobe analysis</em></div>
-          <div className="panel-flat workflow-card workflow-card-optimize"><span><Sparkles size={19} /></span><small>02 / Optimize</small><strong>Choose the right kind of output</strong><p>Create a genuine 60 FPS upload copy, a labelled 120 FPS master, or preserve compatible streams losslessly.</p><em><Check size={13} /> No deceptive metadata</em></div>
+          <div className="panel-flat workflow-card workflow-card-optimize"><span><Sparkles size={19} /></span><small>02 / Optimize</small><strong>Choose the right kind of output</strong><p>Create a source-matched 30/60 FPS upload copy, a labelled 120 FPS master, or preserve compatible streams losslessly.</p><em><Check size={13} /> No deceptive metadata</em></div>
           <div className="panel-flat workflow-card workflow-card-verify"><span><ShieldCheck size={19} /></span><small>03 / Deliver</small><strong>Save with confidence</strong><p>Follow real FFmpeg progress, cancel safely, and download only after the result passes verification.</p><em><Check size={13} /> Private local download</em></div>
         </section>
       )}

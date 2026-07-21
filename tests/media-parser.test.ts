@@ -99,6 +99,31 @@ describe("rational and FFprobe analysis", () => {
     expect(MediaAnalysisSchema.safeParse({ ...analysis, unexpected: true }).success).toBe(false);
   });
 
+  it("does not treat legitimate tiny predicted packets as fake frame metadata", () => {
+    const packets = constantPackets().map((packet, index) => ({
+      ...packet,
+      size: index < 3 ? 8 : packet.size,
+    }));
+    const analysis = parseFfprobeAnalysis(rawProbe(), {
+      packetTiming: analyzePacketRecords(packets, 1 / 60_000),
+    });
+
+    expect(analysis.timing.tinyVideoPacketCount).toBe(3);
+    expect(analysis.timing.suspiciousFrameMetadata).toBe(false);
+  });
+
+  it("flags declared cadence and frame-count mismatches", () => {
+    const cadenceMismatch = parseFfprobeAnalysis(rawProbe(), {
+      packetTiming: analyzePacketRecords(constantPackets(30), 1 / 60_000),
+    });
+    const countMismatch = parseFfprobeAnalysis(rawProbe(), {
+      packetTiming: analyzePacketRecords(constantPackets(60, 50), 1 / 60_000),
+    });
+
+    expect(cadenceMismatch.timing.suspiciousFrameMetadata).toBe(true);
+    expect(countMismatch.timing.suspiciousFrameMetadata).toBe(true);
+  });
+
   it("detects real VFR rather than trusting avg_frame_rate", () => {
     let pts = 0;
     const records = Array.from({ length: 90 }, (_, index) => {
@@ -129,4 +154,3 @@ describe("rational and FFprobe analysis", () => {
     expect(analysis.remux.blockers.join(" ")).toMatch(/Rotation metadata/);
   });
 });
-

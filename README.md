@@ -56,17 +56,21 @@ The web process and worker are intentionally started together by `npm run dev` a
 
 ## Export choices
 
-### Actual 60 FPS file — recommended for TikTok
+### TikTok delivery file — recommended
 
 - Select **1080p** or **1440p (2K)** as a maximum output size. Larger sources are downscaled; smaller sources are never enlarged.
 - The source display aspect ratio, including anamorphic sample-aspect information, is retained without stretching or forced 9:16 cropping.
-- The output has a real constant 60 FPS timeline. A lower-rate source repeats frames without claiming extra native motion; a higher-rate or variable source is sampled into 60 FPS and may drop excess frames.
+- The app recommends 30 FPS for sources up to roughly 30 FPS and 60 FPS for higher-cadence sources. Both choices use an honest constant timeline. This avoids wasting the platform's delivery bitrate on duplicate frames merely to turn 24/30 FPS material into 60 FPS.
 - H.264 High Profile, `yuv420p`, a level selected from the resolved frame size/rate, progressive scan, clean rotation, explicit BT.709 limited-range tags, and `+faststart` MP4.
-- Quality-first CPU encoding uses CRF 14. Hardware VBR targets scale with the real output size: approximately 12 Mbit/s for small media, 24 Mbit/s up to 1080p, and 36 Mbit/s above 1080p, with higher validated maximum rates.
+- Quality-first CPU encoding uses CRF 12. Hardware VBR targets remain conservative for upload delivery: about 8/12 Mbit/s for small 30/60 FPS media, 12/20 Mbit/s up to 1080p, and 20/30 Mbit/s above 1080p, with bounded peak rates.
 - AAC-LC stereo, 48 kHz, 256 kbit/s.
 - HDR sources are tone-mapped to BT.709 SDR. Known non-BT.709 SDR is converted rather than merely relabelled.
 
-TikTok's published Content Posting API restrictions currently state a maximum of 60 FPS. This choice stays within that documented frame-rate range, but TikTok may still recompress, resize, reject, or otherwise process the upload.
+TikTok's published Content Posting API restrictions currently state a 23–60 FPS range. Both delivery choices stay within that documented range, but TikTok may still recompress, resize, reject, or otherwise process the upload.
+
+#### Private-first posting
+
+TikTok does not publish a private-versus-public quality contract. Community reports describe a post looking sharper while private and switching to a lower public playback rendition, but they do not prove the exact server-side cause. FXQY Method cannot repair or control that transition. For the cleanest comparison, preview the verified local export, then upload the final file with the intended visibility. After posting, allow processing to finish and assess on a strong connection with Data Saver disabled and TikTok's high-quality upload option enabled when available. If private-first is required, do not treat its immediate preview as proof of final public quality.
 
 ### 120 FPS master
 
@@ -91,7 +95,7 @@ The remux preset uses `-c copy`; it does not resize, filter, change cadence, fix
 
 It copies only the selected media streams, removes nonessential global metadata and chapters, safely shifts a benign shared negative start, writes `moov` before media data with `+faststart`, and uses the `hvc1` tag for HEVC. The worker verifies encoded packet-payload stream hashes and timing/stream invariants so a supposed lossless remux is not published if encoded media changed.
 
-A remux cannot resize, generate frames, repair pixels, change cadence, remove interlacing, convert an incompatible codec, render rotation into pixels, or repair broken packet timing. When blocked, use the encoded 60 FPS export or the separately labelled 120 FPS master. Resizing and frame generation always require re-encoding, so they cannot also be lossless stream-copy operations.
+A remux cannot resize, generate frames, repair pixels, change cadence, remove interlacing, convert an incompatible codec, render rotation into pixels, or repair broken packet timing. When blocked, use the encoded 30/60 FPS delivery export or the separately labelled 120 FPS master. Resizing and frame generation always require re-encoding, so they cannot also be lossless stream-copy operations.
 
 ## Analysis and warnings
 
@@ -113,11 +117,11 @@ Analysis is diagnostic, not proof that a platform will accept or preserve a file
 
 ## Regular Windows installer (recommended)
 
-Download `FXQY-Method-v1.9-Windows-Installer.msi`, double-click it, and follow the normal Windows installer. The final screen asks whether to launch FXQY Method and selects that option by default. Setup creates normal Desktop and Start Menu shortcuts and adds FXQY Method to **Settings > Apps > Installed apps**, where it can be repaired or uninstalled later.
+Download `FXQY-Method-v1.10-Windows-Installer.msi`, double-click it, and follow the normal Windows installer. The final screen asks whether to launch FXQY Method and selects that option by default. Setup creates normal Desktop and Start Menu shortcuts and adds FXQY Method to **Settings > Apps > Installed apps**, where it can be repaired or uninstalled later.
 
 The installer includes its own Node.js runtime, FFmpeg, FFprobe, and desktop host. It needs no Command Prompt, PowerShell, npm commands, or separate media tools. The app opens in its own embedded WebView2 desktop window—not a browser tab—and automatically chooses an available private loopback port. Its database, uploads, and exports stay under `%LOCALAPPDATA%\FXQY Method\Data`. Accounts and settings are stored only in that local database. Video processing runs on that computer using a supported local GPU encoder when available, with a CPU fallback; videos are not sent to an FXQY Method processing server.
 
-Encoded exports preserve the source video's display aspect ratio automatically. Colour and detail adjustments are neutral so the export remains faithful to the original; the actual 60 FPS mode performs only the compatibility conversions it needs.
+Encoded exports preserve the source video's display aspect ratio automatically. Colour and detail adjustments are neutral so the export remains faithful to the original; the delivery mode performs only the compatibility conversions it needs.
 
 Because this personal build is not code-signed, Windows may show an **Unknown publisher** or Microsoft Defender SmartScreen notice. Confirm that the file came from your own trusted project build; if SmartScreen appears, choose **More info**, then **Run anyway**.
 

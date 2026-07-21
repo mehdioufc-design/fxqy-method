@@ -822,6 +822,7 @@ export async function processClaimedJob(
 
     const outputVerification = verifyOutputAnalysis(command.expected, outputAnalysis);
     assertVerification(outputVerification, "OUTPUT_VERIFICATION_FAILED", addLog);
+    let fullDecodeVerified = false;
     if (options.preset === "lossless-remux") {
       const invariantResult = verifyRemuxInvariants(sourceAnalysis, outputAnalysis);
       assertVerification(invariantResult, "REMUX_INVARIANT_FAILED", addLog);
@@ -837,6 +838,26 @@ export async function processClaimedJob(
         addLog,
       );
       telemetry = { ...telemetry, remuxStreamHashesVerified: true };
+      const tinyPacketCount = sourceAnalysis.timing.tinyVideoPacketCount ?? 0;
+      const tinyPacketRatio = sourceAnalysis.video.fps.sampleCount > 0
+        ? tinyPacketCount / sourceAnalysis.video.fps.sampleCount
+        : 0;
+      if (sourceAnalysis.video.fps.sampleCount > 20 && tinyPacketRatio > 0.02) {
+        persist("Validating unusual packet pattern", 95, {
+          remuxInvariantsVerified: true,
+          unusualSmallPackets: true,
+        });
+        await verifyDecode(
+          candidate,
+          outputAnalysis,
+          signal,
+          attemptDirectory,
+          [source, candidate],
+          addLog,
+        );
+        fullDecodeVerified = true;
+        telemetry = { ...telemetry, remuxFullDecodeVerified: true };
+      }
     } else {
       persist("Full decode validation", 92, { standardsVerified: true });
       await verifyDecode(
@@ -847,11 +868,12 @@ export async function processClaimedJob(
         [source, candidate],
         addLog,
       );
+      fullDecodeVerified = true;
     }
 
     throwIfAborted(signal);
     persist("Publishing verified export", 98, {
-      fullDecodeVerified: options.preset !== "lossless-remux",
+      fullDecodeVerified,
       losslessStreamsVerified: options.preset === "lossless-remux",
       outputAnalysis,
     });

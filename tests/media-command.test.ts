@@ -99,7 +99,8 @@ describe("validated FFmpeg command generation", () => {
     const filter = spec.args[spec.args.indexOf("-vf") + 1];
     expect(spec.executable).toBe("ffmpeg");
     expect(spec.args).toContain("libx264");
-    expect(spec.args).toContain("+faststart+write_colr");
+    expect(spec.args).toContain("+faststart");
+    expect(spec.args).toContain("+cgop");
     expect(spec.args).toContain("mp42");
     expect(spec.args).toContain("cfr");
     expect(filter).toContain("fps=fps=60:round=near");
@@ -145,7 +146,7 @@ describe("validated FFmpeg command generation", () => {
     expect([fullHd.expected.width, fullHd.expected.height]).toEqual([1080, 1920]);
     expect([twoK.expected.width, twoK.expected.height]).toEqual([1440, 2560]);
     expect(twoK.expected.frameRate).toBe(60);
-    expect(twoK.args).toContain("100M");
+    expect(twoK.args).toContain("45M");
     expect(twoK.args[twoK.args.indexOf("-crf") + 1]).toBe("12");
     expect(twoK.args[twoK.args.indexOf("-level:v") + 1]).toBe("5.1");
 
@@ -296,7 +297,7 @@ describe("validated FFmpeg command generation", () => {
       capabilities,
     });
     expect(spec.encoder).toBe("copy");
-    expect(spec.args).toContain("+faststart+write_colr");
+    expect(spec.args).toContain("+faststart");
     expect(spec.args).toContain("mp42");
     expect(spec.args).not.toContain("-r");
     expect(spec.args).not.toContain("-vf");

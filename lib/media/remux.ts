@@ -53,6 +53,9 @@ export function evaluateRemuxEligibility(
   ) {
     blockers.push("Critical packet timestamp errors cannot be safely repaired by a lossless remux.");
   }
+  if (timing.suspiciousFrameMetadata) {
+    blockers.push("Inconsistent frame-rate or sample metadata must not be preserved by a lossless remux.");
+  }
   if (
     timing.avDurationDeltaSeconds !== undefined &&
     timing.avDurationDeltaSeconds > Math.max(0.25, file.durationSeconds * 0.01)
@@ -78,4 +81,3 @@ export function evaluateRemuxEligibility(
     recommendedPreset: blockers.length > 0 ? "tiktok-safe" : undefined,
   };
 }
-

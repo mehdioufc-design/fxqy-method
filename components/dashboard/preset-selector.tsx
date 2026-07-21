@@ -3,6 +3,7 @@
 import { BadgeCheck, Film, Info, Layers3, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { formatBytes } from "@/lib/client-api";
 import { qualityResolutionTier, resolveOutputDimensions } from "@/lib/media/output-dimensions";
+import { recommendedSafeFps } from "@/lib/smart-optimize";
 import type { ExportSettings, OutputResolution, UploadedAsset } from "./types";
 
 export function PresetSelector({
@@ -25,6 +26,12 @@ export function PresetSelector({
   const sourceAtLeast120 = sourceFps !== undefined && sourceFps >= 119.98;
   const masterAvailable = sourceFps !== undefined && sourceFps > 0;
   const canRemux = asset.analysis.remux?.eligible === true;
+  const suggestedFps = recommendedSafeFps(asset.analysis);
+  const sourceWidth = asset.analysis.video.displayWidth ?? asset.analysis.video.width;
+  const sourceHeight = asset.analysis.video.displayHeight ?? asset.analysis.video.height;
+  const deliveryFriendlyRemux = canRemux
+    && Math.max(sourceWidth, sourceHeight) <= 1920
+    && Math.min(sourceWidth, sourceHeight) <= 1080;
   const safe = settings.preset === "tiktok-safe";
   const maximum = settings.preset === "maximum-quality";
   const master = settings.preset === "master-120";
@@ -40,6 +47,7 @@ export function PresetSelector({
       settings.codec,
       dimensions.width,
       dimensions.height,
+      settings.safeFps,
     );
 
   const update = (changes: Partial<ExportSettings>) => onChange({ ...settings, ...changes });
@@ -60,15 +68,15 @@ export function PresetSelector({
           type="button"
           disabled={locked}
           aria-pressed={safe}
-          onClick={() => update({ preset: "tiktok-safe", safeFps: 60, codec: "h264" })}
+          onClick={() => update({ preset: "tiktok-safe", safeFps: suggestedFps, codec: "h264" })}
         >
           <span className="preset-card-top">
             <i><BadgeCheck size={17} /></i>
             <small>Recommended for TikTok</small>
             <b aria-hidden="true" />
           </span>
-          <strong>Actual 60 FPS file</strong>
-          <p>High-quality H.264 MP4 with a real constant 60 FPS timeline. {safeCadence}</p>
+          <strong>TikTok delivery file</strong>
+          <p>High-quality H.264 MP4 with a genuine {settings.safeFps} FPS timeline. {safeCadence}</p>
           <span className="preset-spec mono">H.264 High · yuv420p · AAC · fast-start</span>
         </button>
 
@@ -121,7 +129,7 @@ export function PresetSelector({
         >
           <span className="preset-card-top">
             <i><Zap size={17} /></i>
-            <small className={canRemux ? "highly-recommended-badge" : undefined}>{canRemux ? "Highly recommended" : "Unavailable for this source"}</small>
+            <small className={deliveryFriendlyRemux ? "highly-recommended-badge" : undefined}>{deliveryFriendlyRemux ? "Highly recommended" : canRemux ? "Preserves the original" : "Unavailable for this source"}</small>
             <b aria-hidden="true" />
           </span>
           <strong>Lossless preserve</strong>
@@ -146,13 +154,13 @@ export function PresetSelector({
               className="button-secondary"
               type="button"
               disabled={locked}
-              onClick={() => update({ preset: "tiktok-safe", safeFps: 60, codec: "h264", outputResolution: "1080p" })}
+              onClick={() => update({ preset: "tiktok-safe", safeFps: suggestedFps, codec: "h264", outputResolution: "1080p" })}
             >Create 1080p</button>
             <button
               className="button-secondary"
               type="button"
               disabled={locked}
-              onClick={() => update({ preset: "tiktok-safe", safeFps: 60, codec: "h264", outputResolution: "2k" })}
+              onClick={() => update({ preset: "tiktok-safe", safeFps: suggestedFps, codec: "h264", outputResolution: "2k" })}
             >Create 1440p (2K)</button>
           </div>
         </div>
@@ -184,11 +192,23 @@ export function PresetSelector({
 
           <div className="output-choice-group">
             <span className="control-label"><Film size={14} /> Frame-rate result</span>
-            <div className="fixed-output-value">
-              <strong>{master ? "120 FPS" : maximum ? "Source FPS" : "60 FPS"}</strong>
-              <span>{master ? "actual 120 FPS timing" : maximum ? "original frame timing" : "TikTok-compatible timing"}</span>
-            </div>
-            <small>{master ? "The file reports exactly what it contains." : "Within TikTok's documented 23–60 FPS range."}</small>
+            {safe ? (
+              <>
+                <div className="segmented-control" role="group" aria-label="TikTok delivery frame rate">
+                  <button type="button" className={settings.safeFps === 30 ? "active" : ""} disabled={locked} aria-pressed={settings.safeFps === 30} onClick={() => update({ safeFps: 30 })}>30 FPS{suggestedFps === 30 ? " · recommended" : ""}</button>
+                  <button type="button" className={settings.safeFps === 60 ? "active" : ""} disabled={locked} aria-pressed={settings.safeFps === 60} onClick={() => update({ safeFps: 60 })}>60 FPS{suggestedFps === 60 ? " · recommended" : ""}</button>
+                </div>
+                <small>Match the source where possible. Turning 24/30 FPS into 60 only repeats frames and gives TikTok more frames to compress.</small>
+              </>
+            ) : (
+              <>
+                <div className="fixed-output-value">
+                  <strong>{master ? "120 FPS" : "Source FPS"}</strong>
+                  <span>{master ? "actual 120 FPS timing" : "original frame timing"}</span>
+                </div>
+                <small>{master ? "The file reports exactly what it contains." : "Source timestamps are preserved."}</small>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -245,14 +265,14 @@ export function PresetSelector({
               ? `${dimensions.limitedBySource ? `${dimensions.width} × ${dimensions.height}` : resolutionLabel(settings.outputResolution)} 120 FPS master`
               : maximum
                 ? `${dimensions.width} × ${dimensions.height} maximum-quality file`
-              : `${dimensions.limitedBySource ? `${dimensions.width} × ${dimensions.height}` : resolutionLabel(settings.outputResolution)} 60 FPS upload file`}</strong>
+              : `${dimensions.limitedBySource ? `${dimensions.width} × ${dimensions.height}` : resolutionLabel(settings.outputResolution)} ${settings.safeFps} FPS upload file`}</strong>
           <span>{lossless
             ? "No pixel or frame re-encoding"
             : `${dimensions.width} × ${dimensions.height} · quality-first encode · ${master || maximum ? settings.codec.toUpperCase() : "H.264"}`}</span>
         </div>
         <div className="outcome-tags">
           <span>{lossless ? "stream copy" : "high bitrate"}</span>
-          <span>{lossless || maximum ? "original cadence" : master ? "120 FPS CFR" : "60 FPS CFR"}</span>
+          <span>{lossless || maximum ? "original cadence" : master ? "120 FPS CFR" : `${settings.safeFps} FPS CFR`}</span>
           <span>fast-start</span>
           <span>no watermark</span>
         </div>
@@ -267,6 +287,10 @@ export function PresetSelector({
         <ShieldCheck size={16} />
         <span><strong>Standards-compliant timing</strong><small>The optimizer never stores 120 frames under false 60 FPS metadata, manipulates TikTok parsing, or claims control over reach and engagement.</small></span>
       </div>
+      <div className="notice notice-warning">
+        <Info size={16} />
+        <span><strong>Private-first cannot be repaired after upload</strong><small>If quality changes when a private post is made public, that is a TikTok delivery decision. For the cleanest test, upload this final export with the intended visibility; wait for processing, disable Data Saver, and enable high-quality upload when TikTok offers that control.</small></span>
+      </div>
     </section>
   );
 }
@@ -278,11 +302,14 @@ function estimateEncodedBytes(
   codec: "h264" | "hevc",
   width: number,
   height: number,
+  safeFps: 30 | 60,
 ) {
   const tier = qualityResolutionTier(width, height);
   const videoMbps = master || maximum
     ? tier === "small" ? (codec === "hevc" ? 18 : 24) : tier === "1080p" ? (codec === "hevc" ? 36 : 48) : (codec === "hevc" ? 54 : 72)
-    : tier === "small" ? 18 : tier === "1080p" ? 36 : 65;
+    : safeFps === 60
+      ? tier === "small" ? 12 : tier === "1080p" ? 20 : 30
+      : tier === "small" ? 8 : tier === "1080p" ? 12 : 20;
   return Math.ceil(Math.max(1, duration) * ((videoMbps + 0.256) * 1_000_000 / 8) * 1.03);
 }
 
@@ -295,11 +322,12 @@ function describeSafeCadence(asset: UploadedAsset): string {
   if (!fps || asset.analysis.video.fps.kind === "indeterminate") {
     return "Source timing is conformed honestly; no native-motion claim is made.";
   }
-  if (asset.analysis.video.fps.kind === "constant" && Math.abs(fps - 60) <= 0.02) {
-    return "The source already has native 60 FPS motion.";
+  const target = recommendedSafeFps(asset.analysis);
+  if (asset.analysis.video.fps.kind === "constant" && Math.abs(fps - target) <= 0.02) {
+    return `The source already has native ${target} FPS motion.`;
   }
-  if (fps < 59.98) {
-    return "Lower-rate source frames are repeated; this does not create smoother native motion.";
+  if (fps < target - 0.02) {
+    return `The closest delivery choice is ${target} FPS; no extra smoothness is claimed.`;
   }
-  return "Source moments are sampled into 60 FPS; excess frames may be dropped.";
+  return `Source moments are sampled into ${target} FPS; excess frames may be dropped.`;
 }

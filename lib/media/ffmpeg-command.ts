@@ -312,7 +312,7 @@ function buildFilterGraph(params: {
   if (params.frameFilter && !params.frameFilterBeforeGeometry) afterGeometry.push(params.frameFilter);
   const sharpen = sharpenFilter(params.enhancements.sharpening);
   if (sharpen) afterGeometry.push(sharpen);
-  afterGeometry.push("setsar=1", `format=${params.pixelFormat}`);
+  afterGeometry.push("setpts=PTS-STARTPTS", "setsar=1", `format=${params.pixelFormat}`);
 
   if (params.fitMode !== "blurred-background") {
     const chain = [
@@ -346,17 +346,17 @@ function safeQualityRate(width: number, height: number, fps: 30 | 60): RateContr
   const tier = qualityResolutionTier(width, height);
   if (tier === "small") {
     return fps === 60
-      ? { target: "18M", maximum: "30M", buffer: "60M", cpuCrf: 12 }
-      : { target: "12M", maximum: "22M", buffer: "44M", cpuCrf: 12 };
+      ? { target: "12M", maximum: "20M", buffer: "40M", cpuCrf: 12 }
+      : { target: "8M", maximum: "14M", buffer: "28M", cpuCrf: 12 };
   }
   if (tier === "1080p") {
     return fps === 60
-      ? { target: "36M", maximum: "55M", buffer: "110M", cpuCrf: 12 }
-      : { target: "24M", maximum: "40M", buffer: "80M", cpuCrf: 12 };
+      ? { target: "20M", maximum: "28M", buffer: "56M", cpuCrf: 12 }
+      : { target: "12M", maximum: "20M", buffer: "40M", cpuCrf: 12 };
   }
   return fps === 60
-    ? { target: "65M", maximum: "100M", buffer: "200M", cpuCrf: 12 }
-    : { target: "42M", maximum: "70M", buffer: "140M", cpuCrf: 12 };
+    ? { target: "30M", maximum: "45M", buffer: "90M", cpuCrf: 12 }
+    : { target: "20M", maximum: "32M", buffer: "64M", cpuCrf: 12 };
 }
 
 function masterQualityRate(width: number, height: number, codec: ExportCodec): RateControl {
@@ -430,10 +430,15 @@ function encoderArgs(
 ): string[] {
   const common = ["-c:v", encoder];
   if (encoder === "libx264" || encoder === "libx265") {
+    const cpuPreset = performance === "maximum-cpu"
+      ? "slow"
+      : performance === "balanced"
+        ? "medium"
+        : "fast";
     return [
       ...common,
       "-preset",
-      performance === "maximum-cpu" ? "slow" : "fast",
+      cpuPreset,
       "-crf",
       String(rate.cpuCrf),
       "-maxrate",
@@ -569,7 +574,7 @@ function finishMp4(args: string[], output: string): void {
     "-avoid_negative_ts",
     "make_zero",
     "-movflags",
-    "+faststart+write_colr",
+    "+faststart",
     "-brand",
     "mp42",
     "-metadata:s:v:0",
@@ -679,6 +684,8 @@ function buildEncoded(
   command.args.push(
     "-g",
     String(gop),
+    "-flags",
+    "+cgop",
     "-force_key_frames",
     "expr:gte(t,n_forced*2)",
     "-field_order:v",
@@ -764,7 +771,7 @@ function buildRemux(
   if (analysis.timing.negativeStart) {
     command.args.push("-avoid_negative_ts", "make_zero");
   }
-  command.args.push("-movflags", "+faststart+write_colr", "-brand", "mp42");
+  command.args.push("-movflags", "+faststart", "-brand", "mp42");
   if (analysis.video.codec === "hevc") command.args.push("-tag:v", "hvc1");
   command.args.push("-f", "mp4", output);
   const color = preserveOrAssumeColor(analysis, []);

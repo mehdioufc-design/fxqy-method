@@ -104,6 +104,17 @@ describe("colour, remux, progress, and verification decisions", () => {
     expect(decision.blockers.join(" ")).toMatch(/timestamp/i);
   });
 
+  it("blocks and rejects lossless remux of suspicious frame/sample metadata", () => {
+    const base = bt601Analysis();
+    const suspicious = {
+      ...base,
+      timing: { ...base.timing, suspiciousFrameMetadata: true },
+    };
+    expect(evaluateRemuxEligibility(suspicious).eligible).toBe(false);
+    expect(verifyRemuxInvariants(suspicious, suspicious).issues.map((entry) => entry.code))
+      .toContain("SUSPICIOUS_FRAME_METADATA");
+  });
+
   it("rejects a supposed lossless remux when known colour metadata changes", () => {
     const source = bt601Analysis();
     const output = {

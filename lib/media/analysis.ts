@@ -131,11 +131,9 @@ export function parseFfprobeAnalysis(
       : packetCount !== undefined && ffprobePacketCount !== undefined
         ? Math.abs(packetCount - ffprobePacketCount) > Math.max(3, ffprobePacketCount * 0.005)
         : false;
-  const suspiciousFrameMetadata =
-    cadenceMismatch || countMismatch ||
-    (packetTiming !== undefined &&
-      packetTiming.sampleCount > 20 &&
-      packetTiming.tinyPacketCount / packetTiming.sampleCount > 0.02);
+  // Packet size alone cannot prove deceptive metadata: valid encoders may emit
+  // very small predicted frames for static or highly redundant content.
+  const suspiciousFrameMetadata = cadenceMismatch || countMismatch;
 
   const hdr = isHdr(videoStream);
   const timing = {
@@ -149,6 +147,7 @@ export function parseFfprobeAnalysis(
     maximumGapSeconds: packetTiming?.maximumGapSeconds,
     maximumKeyframeGapSeconds: packetTiming?.maximumKeyframeGapSeconds,
     avDurationDeltaSeconds,
+    tinyVideoPacketCount: packetTiming?.tinyPacketCount ?? 0,
     suspiciousFrameMetadata,
   };
 

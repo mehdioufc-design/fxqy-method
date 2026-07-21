@@ -166,6 +166,9 @@ export function verifyOutputAnalysis(
   ) {
     issue(issues, "TIMESTAMP_ERROR", "Output contains invalid packet timestamps.");
   }
+  if (actual.timing.suspiciousFrameMetadata) {
+    issue(issues, "SUSPICIOUS_FRAME_METADATA", "Output contains inconsistent frame-rate or sample metadata.");
+  }
   if (
     actual.timing.avDurationDeltaSeconds !== undefined &&
     actual.timing.avDurationDeltaSeconds > Math.max(0.25, actual.file.durationSeconds * 0.01)
@@ -185,6 +188,9 @@ export function verifyOutputAnalysis(
 
 export function verifyRemuxInvariants(source: MediaAnalysis, output: MediaAnalysis): VerificationResult {
   const issues: VerificationIssue[] = [];
+  if (source.timing.suspiciousFrameMetadata || output.timing.suspiciousFrameMetadata) {
+    issue(issues, "SUSPICIOUS_FRAME_METADATA", "Lossless remux must not preserve inconsistent frame-rate or sample metadata.");
+  }
   if (source.video.codec !== output.video.codec) {
     issue(issues, "VIDEO_CODEC_CHANGED", "Lossless remux changed the video codec.");
   }

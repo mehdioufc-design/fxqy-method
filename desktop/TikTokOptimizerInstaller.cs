@@ -166,7 +166,7 @@ internal sealed class InstallerForm : Form
             using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\FXQYMethod"))
             {
                 key.SetValue("DisplayName", "FXQY Method");
-                key.SetValue("DisplayVersion", "1.8.0");
+                key.SetValue("DisplayVersion", "1.10.0");
                 key.SetValue("Publisher", "FXQY Method");
                 key.SetValue("InstallLocation", installRoot);
                 key.SetValue("DisplayIcon", launcher);

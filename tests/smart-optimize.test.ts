@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseSmartOptimize, type SmartOptimizeAnalysis } from "../lib/smart-optimize";
+import { chooseSmartOptimize, recommendedSafeFps, type SmartOptimizeAnalysis } from "../lib/smart-optimize";
 
 function analysis(overrides: Partial<SmartOptimizeAnalysis> = {}): SmartOptimizeAnalysis {
   return {
@@ -19,10 +19,17 @@ describe("smart optimization selection", () => {
     expect(chooseSmartOptimize(analysis()).preset).toBe("lossless-remux");
   });
 
-  it("preserves eligible 4K H.264 SDR sources without another lossy encode", () => {
+  it("uses a controlled delivery downscale for eligible 4K sources", () => {
     expect(chooseSmartOptimize(analysis({
       video: { ...analysis().video, width: 2160, height: 3840 },
-    })).preset).toBe("lossless-remux");
+    })).preset).toBe("tiktok-safe");
+  });
+
+  it("matches delivery cadence to source motion instead of inflating every source to 60 FPS", () => {
+    expect(recommendedSafeFps(analysis())).toBe(30);
+    expect(recommendedSafeFps(analysis({
+      video: { ...analysis().video, fps: { measured: 59.94 } },
+    }))).toBe(60);
   });
 
   it("converts ineligible, HEVC, HDR, oversized, and ambiguous-colour sources", () => {

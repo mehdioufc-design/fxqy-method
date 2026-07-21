@@ -41,7 +41,7 @@ export function ProcessingPanel({
       ? `up to ${settings.outputResolution === "2k" ? "1440p (2K)" : "1080p"} 120 FPS master`
       : settings.preset === "maximum-quality"
         ? "maximum-quality file preserving up to 4K and the source frame rate"
-      : `up to ${settings.outputResolution === "2k" ? "1440p (2K)" : "1080p"} 60 FPS upload file`;
+      : `up to ${settings.outputResolution === "2k" ? "1440p (2K)" : "1080p"} ${settings.safeFps} FPS upload file`;
 
   return (
     <section className="processing-panel panel animate-in" aria-labelledby="processing-title">

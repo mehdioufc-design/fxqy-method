@@ -3,7 +3,7 @@
   <Package
     Name="FXQY Method"
     Manufacturer="FXQY Method"
-    Version="1.9.0"
+    Version="1.10.0"
     UpgradeCode="B8F13F4E-73C0-4A45-A74A-F4B99A70BC9C"
     Scope="perMachine">
 

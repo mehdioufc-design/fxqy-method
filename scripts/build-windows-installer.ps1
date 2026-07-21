@@ -6,7 +6,7 @@ $stageRoot = Join-Path $workRoot "stage"
 $appStage = Join-Path $stageRoot "app"
 $packageRoot = Join-Path $workRoot "package"
 $outputRoot = Join-Path $projectRoot "outputs"
-$setupPath = Join-Path $outputRoot "FXQY Method Setup v1.9.exe"
+$setupPath = Join-Path $outputRoot "FXQY Method Setup v1.10.exe"
 $csc = "$env:SystemRoot\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 $nodeRuntime = Join-Path (Split-Path -Parent (Get-Command node.exe).Source) "node.exe"
 

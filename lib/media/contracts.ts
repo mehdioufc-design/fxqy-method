@@ -137,6 +137,7 @@ export const MediaAnalysisSchema = z
         maximumGapSeconds: z.number().nonnegative().optional(),
         maximumKeyframeGapSeconds: z.number().nonnegative().optional(),
         avDurationDeltaSeconds: z.number().nonnegative().optional(),
+        tinyVideoPacketCount: z.number().int().nonnegative().optional(),
         suspiciousFrameMetadata: z.boolean(),
       })
       .strict(),
@@ -147,4 +148,3 @@ export const MediaAnalysisSchema = z
   .strict();
 
 export type MediaAnalysis = z.infer<typeof MediaAnalysisSchema>;
-

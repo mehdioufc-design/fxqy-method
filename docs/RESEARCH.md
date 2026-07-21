@@ -149,6 +149,12 @@ Those limits describe the Content Posting API and should not be presented as an 
 
 The public API documentation describes an upload entering TikTok's posting process and exposes failures for invalid formats, picture sizes, and frame rates, but it does not promise elementary-stream passthrough or document a way to disable transcoding. Therefore no local optimiser can truthfully guarantee that TikTok will preserve a resolution, bitrate, frame cadence, codec, or colour rendition.
 
+### Private-first versus public playback
+
+TikTok's public [post-status documentation](https://developers.tiktok.com/doc/content-posting-api-reference-get-video-status) describes asynchronous post processing and its posting API supports per-post visibility, but it does not document a private-versus-public encoder setting or a quality entitlement for private posts. Multiple community reports describe the same observable symptom—a sharp private preview followed by a lower-resolution or lower-frame-rate public rendition ([example one](https://www.reddit.com/r/Tiktokhelp/comments/169pfic), [example two](https://www.reddit.com/r/Tiktokhelp/comments/1efb6fl))—but these reports cannot establish whether the cause is a new transcode, completion of a public delivery ladder, adaptive-bitrate selection, caching, device settings, or another platform decision.
+
+The application therefore treats the symptom as credible and the cause as unverified. It recommends source-matched 30/60 FPS, controlled 1080p downscaling for larger sources, zero-based CFR timestamps, closed two-second GOPs, H.264 High/yuv420p, BT.709 limited range, AAC-LC, and ordinary non-fragmented fast-start MP4. These choices minimise avoidable conversion work; they do not bypass TikTok processing. If a creator observes the problem, the repeatable test is direct-public versus private-then-public using the same original, clip types and waiting interval, assessed after processing from another account/device on a strong connection.
+
 ## Evidence and uncertainty around TikTok recompression
 
 There is credible evidence that TikTok transcodes uploaded media, but exact output is an evolving platform decision:
